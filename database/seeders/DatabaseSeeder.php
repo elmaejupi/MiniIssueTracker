@@ -9,7 +9,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        //createing some tags
+        //creating some tags
         $tags = Tag::factory()->count(6)->create();
 
         //creating multiple projects

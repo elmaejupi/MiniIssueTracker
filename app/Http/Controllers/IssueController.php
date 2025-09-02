@@ -1,61 +1,81 @@
 <?php
 
+
 namespace App\Http\Controllers;
 
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class IssueController extends Controller
 {
-    //Listing issues (with filters by status, priority, and tag)
-    public function index()
+    // List issues (with filters)
+    public function index(Request $request)
     {
-        $issues = Issue::with('project')->get();
-        return view('issues.index', compact('issues'));
+        $query = Issue::with('project');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
+        }
+        if ($request->filled('tag')) {
+            $query->whereHas('tags', fn($q) => $q->where('tags.id', $request->tag));
+        }
+
+        $issues = $query->get();
+        $tags = Tag::all();
+
+        return view('issues.index', compact('issues', 'tags'));
     }
 
-    //create form
+    // Show create form
     public function create()
     {
         $projects = Project::all(); 
         return view('issues.create', compact('projects'));
     }
 
-    //to store a new issue
-    public function store(Request $request)
-    {
-        $request->validate([
-            'project_id' => 'required|exists:projects,id',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'required|in:open,in_progress,closed',
-            'priority' => 'required|in:low,medium,high',
-            'due_date' => 'nullable|date',
-        ]);
+    
 
-        Issue::create($request->all());
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'project_id' => 'required|exists:projects,id',
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'status' => 'required|in:open,in_progress,closed',
+        'priority' => 'required|in:low,medium,high',
+        'due_date' => 'nullable|date',
+    ]);
 
-        return redirect()->route('issues.index')->with('success', 'Issue created successfully.');
-    }
+    $validated['user_id'] = Auth::id();
 
-    //issue details
+    Issue::create($validated);
+
+    return redirect()->route('issues.index')->with('success', 'Issue created successfully.');
+}
+
+
+    // Show issue details
     public function show(Issue $issue)
     {
-        $issue->load(['project', 'comments', 'tags']);
-        $allTags = Tag::all(); // for tag dropdown
+        $allTags = Tag::all();
+        $issue->load(['project','comments','tags']);
         return view('issues.show', compact('issue', 'allTags'));
     }
 
-    //edit
+    // Edit
     public function edit(Issue $issue)
     {
         $projects = Project::all();
         return view('issues.edit', compact('issue', 'projects'));
     }
 
-    //update issue
+    // Update
     public function update(Request $request, Issue $issue)
     {
         $request->validate([
@@ -72,28 +92,14 @@ class IssueController extends Controller
         return redirect()->route('issues.index')->with('success', 'Issue updated successfully.');
     }
 
-    //delete issue
+    // Delete
     public function destroy(Issue $issue)
     {
         $issue->delete();
         return redirect()->route('issues.index')->with('success', 'Issue deleted successfully.');
     }
 
-    // ✅ Update tags for an issue
-    public function updateTags(Request $request, Issue $issue)
-    {
-        $request->validate([
-            'tags' => 'array',
-            'tags.*' => 'exists:tags,id'
-        ]);
-
-        $issue->tags()->sync($request->tags ?? []);
-
-        return redirect()->route('issues.show', $issue)
-                         ->with('success', 'Tags updated successfully.');
-    }
-
-    // ✅ Add a new comment to an issue
+    // Add Comment
     public function addComment(Request $request, Issue $issue)
     {
         $request->validate([
@@ -103,7 +109,6 @@ class IssueController extends Controller
 
         $issue->comments()->create($request->only('author_name', 'body'));
 
-        return redirect()->route('issues.show', $issue)
-                         ->with('success', 'Comment added successfully.');
+        return redirect()->route('issues.show', $issue)->with('success', 'Comment added successfully.');
     }
 }

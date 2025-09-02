@@ -11,13 +11,19 @@ class Comment extends Model
 
     protected $fillable = [
         'issue_id',
-        'author_name',
+        'user_id',   
         'body',
     ];
 
-    //comment belongs to an issue
+    // Comment belongs to an issue
     public function issue()
     {
         return $this->belongsTo(Issue::class);
+    }
+
+    // Comment belongs to a user
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

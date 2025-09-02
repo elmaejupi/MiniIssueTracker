@@ -2,23 +2,50 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Comment;
 use App\Models\Issue;
+use App\Models\Comment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CommentController extends Controller
 {
-    //to store a new comment
-    public function store(Request $request, Issue $issue)
-    {
-        $request->validate([
-            'author_name' => 'required|string|max:255',
-            'body' => 'required|string',
-        ]);
+    public function index(Issue $issue)
+{
+    $comments = $issue->comments()->latest()->paginate(5);
 
-        $issue->comments()->create($request->only('author_name', 'body'));
+    return response()->json([
+        'comments' => $comments->map(fn($c) => [
+            'id' => $c->id,
+            'author_name' => $c->user?->name ?? 'Anonymous',
+            'body' => $c->body,
+        ]),
+        'next_page_url' => $comments->nextPageUrl()
+    ]);
+}
 
-        return redirect()->route('issues.show', $issue)
-                        ->with('success', 'Comment added successfully.');
-    }
+
+
+
+  public function store(Request $request, Issue $issue)
+{
+    $validated = $request->validate([
+        'body' => 'required|string',
+    ]);
+
+    $comment = $issue->comments()->create([
+        'body' => $validated['body'],
+        'user_id' => auth()->id(),
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'comment' => [
+            'id' => $comment->id,
+            'author_name' => $comment->user->name,
+            'body' => $comment->body,
+        ]
+    ]);
+}
+
+
 }

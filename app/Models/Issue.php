@@ -10,13 +10,15 @@ class Issue extends Model
     use HasFactory;
 
     protected $fillable = [
-        'project_id',
-        'title',
-        'description',
-        'status',
-        'priority',
-        'due_date',
-    ];
+    'project_id',
+    'user_id',   
+    'title',
+    'description',
+    'status',
+    'priority',
+    'due_date',
+];
+
 
     //issue belongs to a project
     public function project()
@@ -35,4 +37,9 @@ class Issue extends Model
     {
         return $this->belongsToMany(Tag::class, 'issue_tag');
     }
+    public function user()
+{
+    return $this->belongsTo(User::class);
+}
+
 }
