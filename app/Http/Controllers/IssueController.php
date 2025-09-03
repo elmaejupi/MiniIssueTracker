@@ -12,24 +12,38 @@ class IssueController extends Controller
 {
     // List issues with filters
     public function index(Request $request)
-    {
-        $query = Issue::with('project');
+{
+    $query = Issue::with('project');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
-        }
-        if ($request->filled('tag')) {
-            $query->whereHas('tags', fn($q) => $q->where('tags.id', $request->tag));
-        }
-
-        $issues = $query->get();
-        $tags = Tag::all();
-
-        return view('issues.index', compact('issues', 'tags'));
+    // Filters
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
     }
+    if ($request->filled('priority')) {
+        $query->where('priority', $request->priority);
+    }
+    if ($request->filled('tag')) {
+        $query->whereHas('tags', fn($q) => $q->where('tags.id', $request->tag));
+    }
+
+    // Search filter
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+            ->orWhere('description', 'like', "%{$search}%");
+        });
+    }
+
+    $issues = $query->get();
+    $tags = Tag::all();
+
+    if ($request->ajax()) {
+        return view('issues.partials.issues-table', compact('issues'));
+    }
+
+    return view('issues.index', compact('issues', 'tags'));
+}
 
     // Show create form
     public function create()

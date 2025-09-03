@@ -65,27 +65,9 @@
                         </tr>
                     </thead>
                     <tbody id="issues-table">
-                        @forelse($issues as $issue)
-                            <tr>
-                                <td>{{ $issue->title }}</td>
-                                <td>{{ $issue->project->name }}</td>
-                                <td>{{ ucfirst($issue->status) }}</td>
-                                <td>{{ ucfirst($issue->priority) }}</td>
-                                <td>
-                                    <a href="{{ route('issues.show', $issue) }}" class="btn btn-info btn-sm">View</a>
-                                    <a href="{{ route('issues.edit', $issue) }}" class="btn btn-warning btn-sm">Edit</a>
-                                    <form action="{{ route('issues.destroy', $issue) }}" method="POST" class="d-inline">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="text-center">No issues found.</td>
-                            </tr>
-                        @endforelse
+                        @include('issues.partials.issues-table', ['issues' => $issues])
                     </tbody>
+
                 </table>
             </div>
         </div>
@@ -95,19 +77,17 @@
     <script>
         let timer;
         document.getElementById('search').addEventListener('input', function() {
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-                fetch(`{{ route('issues.index') }}?search=${this.value}`, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                .then(res => res.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const newTableBody = doc.querySelector('#issues-table').innerHTML;
-                    document.querySelector('#issues-table').innerHTML = newTableBody;
-                });
-            }, 300);
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            const query = this.value;
+            fetch(`{{ route('issues.index') }}?search=${query}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.text())
+            .then(html => {
+                document.querySelector('#issues-table').innerHTML = html;
+            });
+        }, 300);
         });
     </script>
     @endpush
