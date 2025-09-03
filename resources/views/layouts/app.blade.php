@@ -17,29 +17,48 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-        @include('layouts.navigation')
+<body class="font-sans antialiased bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ route('projects.index') }}">IssueTracker</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('projects.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">Projects</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('issues.*') ? 'active' : '' }}" href="{{ route('issues.index') }}">Issues</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    @auth
+                        <li class="nav-item me-2">
+                            <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-outline-light">
+                                Profile
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-light">
+                                Logout
+                            </button>
+                        </form>
+                    </li>
+                    @endauth
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-        <!-- Page Heading -->
-        @isset($header)
-            <header class="bg-white dark:bg-gray-800 shadow">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                    {{ $header }}
-                </div>
-            </header>
-        @endisset
+    <main class="py-4">
+        {{ $slot }}
+    </main>
 
-        <!-- Page Content -->
-        <main>
-            {{ $slot }}
-        </main>
-    </div>
-
-    <!-- Bootstrap JS bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Include stacked scripts -->
     @stack('scripts')
 </body>
 </html>
