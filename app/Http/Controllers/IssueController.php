@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers;
 
 use App\Models\Issue;
@@ -11,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class IssueController extends Controller
 {
-    // List issues (with filters)
+    // List issues with filters
     public function index(Request $request)
     {
         $query = Issue::with('project');
@@ -39,26 +38,24 @@ class IssueController extends Controller
         return view('issues.create', compact('projects'));
     }
 
-    
+    // Store new issue
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'project_id' => 'required|exists:projects,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'status' => 'required|in:open,in_progress,closed',
+            'priority' => 'required|in:low,medium,high',
+            'due_date' => 'nullable|date',
+        ]);
 
-public function store(Request $request)
-{
-    $validated = $request->validate([
-        'project_id' => 'required|exists:projects,id',
-        'title' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'status' => 'required|in:open,in_progress,closed',
-        'priority' => 'required|in:low,medium,high',
-        'due_date' => 'nullable|date',
-    ]);
+        $validated['user_id'] = Auth::id();
 
-    $validated['user_id'] = Auth::id();
+        Issue::create($validated);
 
-    Issue::create($validated);
-
-    return redirect()->route('issues.index')->with('success', 'Issue created successfully.');
-}
-
+        return redirect()->route('issues.index')->with('success', 'Issue created successfully.');
+    }
 
     // Show issue details
     public function show(Issue $issue)
@@ -68,14 +65,14 @@ public function store(Request $request)
         return view('issues.show', compact('issue', 'allTags'));
     }
 
-    // Edit
+    // Edit issue
     public function edit(Issue $issue)
     {
         $projects = Project::all();
         return view('issues.edit', compact('issue', 'projects'));
     }
 
-    // Update
+    // Update issue
     public function update(Request $request, Issue $issue)
     {
         $request->validate([
@@ -92,14 +89,14 @@ public function store(Request $request)
         return redirect()->route('issues.index')->with('success', 'Issue updated successfully.');
     }
 
-    // Delete
+    // Delete issue
     public function destroy(Issue $issue)
     {
         $issue->delete();
         return redirect()->route('issues.index')->with('success', 'Issue deleted successfully.');
     }
 
-    // Add Comment
+    // Add comment manually
     public function addComment(Request $request, Issue $issue)
     {
         $request->validate([
@@ -110,5 +107,21 @@ public function store(Request $request)
         $issue->comments()->create($request->only('author_name', 'body'));
 
         return redirect()->route('issues.show', $issue)->with('success', 'Comment added successfully.');
+    }
+
+    //  Attach a tag to an issue
+    public function attachTag(Request $request, Issue $issue)
+    {
+        $request->validate(['tag_id' => 'required|exists:tags,id']);
+        $issue->tags()->attach($request->tag_id);
+        return response()->json(['success' => true]);
+    }
+
+    //  Detach a tag from an issue
+    public function detachTag(Request $request, Issue $issue)
+    {
+        $request->validate(['tag_id' => 'required|exists:tags,id']);
+        $issue->tags()->detach($request->tag_id);
+        return response()->json(['success' => true]);
     }
 }
